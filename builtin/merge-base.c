@@ -6,7 +6,8 @@
 #include "revision.h"
 #include "parse-options.h"
 
-static int show_merge_base(struct commit **rev, int rev_nr, int show_all)
+static int show_merge_base(struct commit **rev, int rev_nr,
+			   int show_all, int first_parent_only)
 {
 	struct commit_list *result;
 
@@ -208,10 +209,13 @@ int cmd_merge_base(int argc, const char **argv, const char *prefix)
 	struct commit **rev;
 	int rev_nr = 0;
 	int show_all = 0;
+	int first_parent_only = 0;
 	int cmdmode = 0;
 
 	struct option options[] = {
 		OPT_BOOL('a', "all", &show_all, N_("output all common ancestors")),
+		OPT_BOOL(0, "first-parent", &first_parent_only,
+			 N_("traverse first-parent chain only")),
 		OPT_CMDMODE(0, "octopus", &cmdmode,
 			    N_("find ancestors for a single n-way merge"), 'o'),
 		OPT_CMDMODE(0, "independent", &cmdmode,
@@ -234,8 +238,12 @@ int cmd_merge_base(int argc, const char **argv, const char *prefix)
 		return handle_is_ancestor(argc, argv);
 	}
 
-	if (cmdmode == 'r' && show_all)
-		die("--independent cannot be used with --all");
+	if (cmdmode == 'r' && (show_all | first_parent_only))
+		die("--independent cannot be used with --all or --first-parent");
+	if (cmdmode == 'f' && (show_all | first_parent_only))
+		die("--fork-point cannot be used with --all or --first-parent");
+	if (cmdmode == 'o' && first_parent_only)
+		die("--octopus cannot be used with --first-parent");
 
 	if (cmdmode == 'o')
 		return handle_octopus(argc, argv, show_all);
@@ -255,5 +263,5 @@ int cmd_merge_base(int argc, const char **argv, const char *prefix)
 	rev = xmalloc(argc * sizeof(*rev));
 	while (argc-- > 0)
 		rev[rev_nr++] = get_commit_reference(*argv++);
-	return show_merge_base(rev, rev_nr, show_all);
+	return show_merge_base(rev, rev_nr, show_all, first_parent_only);
 }

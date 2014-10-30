@@ -783,7 +783,7 @@ static struct commit *interesting(struct commit_list *list)
 }
 
 /* all input commits in one and twos[] must have been parsed! */
-static struct commit_list *paint_down_to_common(struct commit *one, int n, struct commit **twos)
+static struct commit_list *paint_down_to_common(struct commit *one, int n, struct commit **twos, int first_parent_only)
 {
 	struct commit_list *list = NULL;
 	struct commit_list *result = NULL;
@@ -821,7 +821,7 @@ static struct commit_list *paint_down_to_common(struct commit *one, int n, struc
 		parents = commit->parents;
 		while (parents) {
 			struct commit *p = parents->item;
-			parents = parents->next;
+			parents = first_parent_only ? NULL : parents->next;
 			if ((p->object.flags & flags) == flags)
 				continue;
 			if (parse_commit(p))
@@ -835,7 +835,7 @@ static struct commit_list *paint_down_to_common(struct commit *one, int n, struc
 	return result;
 }
 
-static struct commit_list *merge_bases_many(struct commit *one, int n, struct commit **twos)
+static struct commit_list *merge_bases_many(struct commit *one, int n, struct commit **twos, int first_parent_only)
 {
 	struct commit_list *list = NULL;
 	struct commit_list *result = NULL;
@@ -857,7 +857,7 @@ static struct commit_list *merge_bases_many(struct commit *one, int n, struct co
 			return NULL;
 	}
 
-	list = paint_down_to_common(one, n, twos);
+	list = paint_down_to_common(one, n, twos, first_parent_only);
 
 	while (list) {
 		struct commit_list *next = list->next;
@@ -896,7 +896,7 @@ struct commit_list *get_octopus_merge_bases(struct commit_list *in)
 	return ret;
 }
 
-static int remove_redundant(struct commit **array, int cnt)
+static int remove_redundant(struct commit **array, int cnt, int first_parent_only)
 {
 	/*
 	 * Some commit in the array may be an ancestor of
@@ -926,7 +926,7 @@ static int remove_redundant(struct commit **array, int cnt)
 			filled_index[filled] = j;
 			work[filled++] = array[j];
 		}
-		common = paint_down_to_common(array[i], filled, work);
+		common = paint_down_to_common(array[i], filled, work, first_parent_only);
 		if (array[i]->object.flags & PARENT2)
 			redundant[i] = 1;
 		for (j = 0; j < filled; j++)
@@ -955,14 +955,15 @@ static int remove_redundant(struct commit **array, int cnt)
 static struct commit_list *get_merge_bases_many_0(struct commit *one,
 						  int n,
 						  struct commit **twos,
-						  int cleanup)
+						  int cleanup,
+						  int first_parent_only)
 {
 	struct commit_list *list;
 	struct commit **rslt;
 	struct commit_list *result;
 	int cnt, i;
 
-	result = merge_bases_many(one, n, twos);
+	result = merge_bases_many(one, n, twos, first_parent_only);
 	for (i = 0; i < n; i++) {
 		if (one == twos[i])
 			return result;
@@ -990,7 +991,7 @@ static struct commit_list *get_merge_bases_many_0(struct commit *one,
 	clear_commit_marks(one, all_flags);
 	clear_commit_marks_many(n, twos, all_flags);
 
-	cnt = remove_redundant(rslt, cnt);
+	cnt = remove_redundant(rslt, cnt, first_parent_only);
 	result = NULL;
 	for (i = 0; i < cnt; i++)
 		commit_list_insert_by_date(rslt[i], &result);
@@ -1002,19 +1003,26 @@ struct commit_list *get_merge_bases_many(struct commit *one,
 					 int n,
 					 struct commit **twos)
 {
-	return get_merge_bases_many_0(one, n, twos, 1);
+	return get_merge_bases_many_0(one, n, twos, 1, 0);
 }
 
 struct commit_list *get_merge_bases_many_dirty(struct commit *one,
 					       int n,
 					       struct commit **twos)
 {
-	return get_merge_bases_many_0(one, n, twos, 0);
+	return get_merge_bases_many_0(one, n, twos, 0, 0);
+}
+
+struct commit_list *get_first_parent_merge_bases_many_dirty(struct commit *one,
+							    int n,
+							    struct commit **twos)
+{
+	return get_merge_bases_many_0(one, n, twos, 0, 1);
 }
 
 struct commit_list *get_merge_bases(struct commit *one, struct commit *two)
 {
-	return get_merge_bases_many_0(one, 1, &two, 1);
+	return get_merge_bases_many_0(one, 1, &two, 1, 0);
 }
 
 /*
@@ -1049,7 +1057,7 @@ int in_merge_bases_many(struct commit *commit, int nr_reference, struct commit *
 		if (parse_commit(reference[i]))
 			return ret;
 
-	bases = paint_down_to_common(commit, nr_reference, reference);
+	bases = paint_down_to_common(commit, nr_reference, reference, 0);
 	if (commit->object.flags & PARENT2)
 		ret = 1;
 	clear_commit_marks(commit, all_flags);
@@ -1092,7 +1100,7 @@ struct commit_list *reduce_heads(struct commit_list *heads)
 			p->item->object.flags &= ~STALE;
 		}
 	}
-	num_head = remove_redundant(array, num_head);
+	num_head = remove_redundant(array, num_head, 0);
 	for (i = 0; i < num_head; i++)
 		tail = &commit_list_insert(array[i], tail)->next;
 	return result;
