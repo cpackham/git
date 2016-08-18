@@ -1,0 +1,9 @@
+At $dayjob we have a patch based work-flow where committers sign patches on the
+way through. Occasionally when a larger patch series is involved it's easier
+pull from the submitter's repo and use git rebase -i to add the required sign
+off either by using 'reword' or 'exec git commit --amend -s'.
+
+This is my attempt at making this a little less cumbersome by adding a
+'sign' command. I decided not to add a short version of the command,
+partly because 's' was taken and partly because it is a bit of a niche
+use-case.
