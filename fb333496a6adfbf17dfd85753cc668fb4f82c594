@@ -1,0 +1,4 @@
+I often find myself using variations of 'git log HEAD ^origin/master' to
+see commits that I have locally that have not been pushed. It is also
+useful when reviewing changes before integrating them e.g. 'git fetch
+...; git log FETCH_HEAD ^origin/master'.
