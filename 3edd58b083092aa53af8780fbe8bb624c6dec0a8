@@ -1,3 +1,4 @@
 Changes in v2:
 - add --continue to builtin_merge_usage
 - verify that no other arguments are present when --continue is used.
+- add basic test
