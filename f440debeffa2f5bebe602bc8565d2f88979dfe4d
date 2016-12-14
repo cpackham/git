@@ -2,3 +2,8 @@ Changes in v2:
 - add --continue to builtin_merge_usage
 - verify that no other arguments are present when --continue is used.
 - add basic test
+
+Changes in v3:
+- check for other options in addtion to arguments, add test for this case
+- re-instate references to 'git commit' that were removed in v2
+- re-work documentation
