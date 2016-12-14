@@ -1,31 +1,8 @@
-I had been playing with cppcheck for some other projects and happened to
-notice [1] in the archives. This is my attempt to resolve the feedback
-that Junio made at the time.
-
-In terms of errors that are actually reported there are only a few
-
-$ make cppcheck
-cppcheck --force --quiet --inline-suppr  .
-[compat/nedmalloc/malloc.c.h:4093]: (error) Possible null pointer dereference: sp
-[compat/nedmalloc/malloc.c.h:4106]: (error) Possible null pointer dereference: sp
-[compat/nedmalloc/nedmalloc.c:551]: (error) Expression '*(&p.mycache)=TlsAlloc(),TLS_OUT_OF_INDEXES==*(&p.mycache)' depends on order of evaluation of side effects
-[compat/regex/regcomp.c:3086]: (error) Memory leak: sbcset
-[compat/regex/regcomp.c:3634]: (error) Memory leak: sbcset
-[compat/regex/regcomp.c:3086]: (error) Memory leak: mbcset
-[compat/regex/regcomp.c:3634]: (error) Memory leak: mbcset
-[compat/regex/regcomp.c:2802]: (error) Uninitialized variable: table_size
-[compat/regex/regcomp.c:2805]: (error) Uninitialized variable: table_size
-[compat/regex/regcomp.c:532]: (error) Memory leak: fastmap
-[t/t4051/appended1.c:3]: (error) Invalid number of character '{' when these macros are defined: ''.
-[t/t4051/appended2.c:35]: (error) Invalid number of character '{' when these macros are defined: ''.
-
-The last 2 are just false positives from test data. I haven't looked
-into any of the others.
-
-I've also provisioned for enabling extra checks by passing CPPCHECK_ADD
-in the make invocation.
-
-$ make cppcheck CPPCHECK_ADD=--enable=all
-... lots of output
-
-[1] - http://public-inbox.org/git/1390993371-2431-1-git-send-email-gitter.spiros@gmail.com/#t
+Changes in v2:
+- only run over actual git source files.
+- omit any files in t/
+- print cppcheck version to allow for better comparison between
+  different build environments
+- introduce CPPCHECK_FLAGS which can be overridden in the make command
+  line. This also uses a GNU make-ism to allow CPPCHECK_ADD to specify
+  additional checks to be enabled.
