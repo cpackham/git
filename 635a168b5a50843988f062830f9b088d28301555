@@ -1,0 +1,8 @@
+Changes in v2:
+- only run over actual git source files.
+- omit any files in t/
+- print cppcheck version to allow for better comparison between
+  different build environments
+- introduce CPPCHECK_FLAGS which can be overridden in the make command
+  line. This also uses a GNU make-ism to allow CPPCHECK_ADD to specify
+  additional checks to be enabled.
